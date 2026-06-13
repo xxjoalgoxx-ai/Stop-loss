@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trade Calc" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <title>Trade Risk Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0b0f1a;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 24px);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .wrap { max-width: 560px; margin: 0 auto; padding-top: 24px; }
+
+    .header { text-align: center; margin-bottom: 24px; }
+    .eyebrow { font-size: 11px; color: #38bdf8; letter-spacing: 0.18em; text-transform: uppercase; font-family: monospace; margin-bottom: 8px; }
+    h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #f1f5f9; }
+    .subtitle { color: #64748b; font-size: 13px; margin-top: 6px; }
+
+    .toggle { display: flex; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+    .toggle-btn { flex: 1; padding: 10px 0; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: background 0.15s, color 0.15s; background: transparent; color: #64748b; }
+    .toggle-btn.active-long { background: #22c55e; color: #fff; }
+    .toggle-btn.active-short { background: #ef4444; color: #fff; }
+
+    .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 18px 18px 10px; margin-bottom: 14px; }
+    .card-label { font-size: 11px; color: #38bdf8; letter-spacing: 0.12em; text-transform: uppercase; font-family: monospace; margin-bottom: 14px; }
+
+    .slider-row { margin-bottom: 18px; }
+    .slider-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .slider-name { font-size: 12px; color: #94a3b8; font-family: monospace; letter-spacing: 0.07em; text-transform: uppercase; }
+
+    /* +/- control */
+    .stepper { display: flex; align-items: center; gap: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; }
+    .step-btn { width: 36px; height: 36px; border: none; background: transparent; color: #38bdf8; font-size: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.1s; user-select: none; -webkit-user-select: none; }
+    .step-btn:active { background: rgba(56,189,248,0.15); }
+    .step-val { min-width: 70px; text-align: center; font-size: 16px; font-weight: 700; color: #f1f5f9; font-family: monospace; padding: 0 4px; }
+
+    input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; height: 4px; }
+    .slider-range { display: flex; justify-content: space-between; margin-top: 3px; }
+    .slider-range span { font-size: 10px; color: #475569; }
+
+    .stat-row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .stat-box { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 13px 14px; min-width: 0; }
+    .stat-box.accent { background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.3); }
+    .stat-lbl { font-size: 11px; color: #64748b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; }
+    .stat-val { font-size: 18px; font-weight: 800; font-family: monospace; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .gauge-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 15px 18px; margin-bottom: 14px; }
+    .gauge-lbl { font-size: 11px; color: #64748b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .gauge-bar-bg { background: #1e293b; border-radius: 6px; height: 10px; overflow: hidden; }
+    .gauge-bar-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #facc15, #4ade80); border-radius: 6px; transition: width 0.3s; }
+    .gauge-ticks { display: flex; justify-content: space-between; margin-top: 5px; }
+    .gauge-ticks span { font-size: 10px; color: #475569; }
+
+    .alert { border-radius: 10px; padding: 12px 15px; font-size: 13px; margin-bottom: 14px; }
+    .alert-warn { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5; }
+    .alert-good { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); color: #86efac; }
+
+    .disclaimer { font-size: 11px; color: #334155; text-align: center; margin-top: 8px; padding-bottom: 24px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="eyebrow">Position Planner</div>
+    <h1>Trade Risk Calculator</h1>
+    <p class="subtitle">Plan your entry, stop loss & take profit before placing the trade.</p>
+  </div>
+
+  <div class="toggle">
+    <button class="toggle-btn active-long" id="btnLong" onclick="setType('Long')">Long ↑</button>
+    <button class="toggle-btn" id="btnShort" onclick="setType('Short')">Short ↓</button>
+  </div>
+
+  <!-- Entry & Levels -->
+  <div class="card">
+    <div class="card-label">Entry & Levels</div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-name">Entry Price</span>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('entry', -1)">−</button>
+          <span class="step-val" id="valEntry">$100</span>
+          <button class="step-btn" onclick="step('entry', 1)">+</button>
+        </div>
+      </div>
+      <input type="range" id="slEntry" min="1" max="5000" step="1" value="100" oninput="syncFromSlider('entry')">
+      <div class="slider-range"><span>$1</span><span>$5,000</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-name" id="lblStop">Stop Loss</span>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('stop', -0.5)">−</button>
+          <span class="step-val" id="valStop">2%</span>
+          <button class="step-btn" onclick="step('stop', 0.5)">+</button>
+        </div>
+      </div>
+      <input type="range" id="slStop" min="0.5" max="20" step="0.5" value="2" oninput="syncFromSlider('stop')">
+      <div class="slider-range"><span>0.5%</span><span>20%</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-name" id="lblTp">Take Profit</span>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('tp', -0.5)">−</button>
+          <span class="step-val" id="valTp">6%</span>
+          <button class="step-btn" onclick="step('tp', 0.5)">+</button>
+        </div>
+      </div>
+      <input type="range" id="slTp" min="0.5" max="50" step="0.5" value="6" oninput="syncFromSlider('tp')">
+      <div class="slider-range"><span>0.5%</span><span>50%</span></div>
+    </div>
+  </div>
+
+  <!-- Account & Risk -->
+  <div class="card">
+    <div class="card-label">Account & Risk</div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-name">Account Size</span>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('account', -500)">−</button>
+          <span class="step-val" id="valAccount">$10,000</span>
+          <button class="step-btn" onclick="step('account', 500)">+</button>
+        </div>
+      </div>
+      <input type="range" id="slAccount" min="500" max="100000" step="500" value="10000" oninput="syncFromSlider('account')">
+      <div class="slider-range"><span>$500</span><span>$100,000</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-name">Risk per Trade</span>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('risk', -0.25)">−</button>
+          <span class="step-val" id="valRisk">1%</span>
+          <button class="step-btn" onclick="step('risk', 0.25)">+</button>
+        </div>
+      </div>
+      <input type="range" id="slRisk" min="0.25" max="5" step="0.25" value="1" oninput="syncFromSlider('risk')">
+      <div class="slider-range"><span>0.25%</span><span>5%</span></div>
+    </div>
+  </div>
+
+  <!-- Price levels -->
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-lbl">Entry</div><div class="stat-val" id="outEntry" style="color:#f1f5f9">—</div></div>
+    <div class="stat-box"><div class="stat-lbl" id="outStopLbl">Stop ↓</div><div class="stat-val" id="outStop" style="color:#f87171">—</div></div>
+    <div class="stat-box"><div class="stat-lbl" id="outTpLbl">Target ↑</div><div class="stat-val" id="outTp" style="color:#4ade80">—</div></div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box accent"><div class="stat-lbl">Risk : Reward</div><div class="stat-val" id="outRR">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Win Rate Needed</div><div class="stat-val" id="outWin">—</div></div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-lbl">Shares / Units</div><div class="stat-val" id="outShares" style="color:#f1f5f9">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Position Size</div><div class="stat-val" id="outPos" style="color:#f1f5f9">—</div></div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-lbl">Max Loss</div><div class="stat-val" id="outLoss" style="color:#f87171">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Max Gain</div><div class="stat-val" id="outGain" style="color:#4ade80">—</div></div>
+  </div>
+
+  <div class="gauge-card">
+    <div class="gauge-lbl">Risk / Reward Quality</div>
+    <div class="gauge-bar-bg"><div class="gauge-bar-fill" id="gaugeFill" style="width:0%"></div></div>
+    <div class="gauge-ticks">
+      <span>1:1 (min)</span><span>2:1 (ok)</span><span>3:1 (good)</span><span>5:1 (great)</span>
+    </div>
+  </div>
+
+  <div class="alert alert-warn" id="alertWarn" style="display:none">⚠️ R:R below 2:1 — consider widening your target or tightening your stop.</div>
+  <div class="alert alert-good" id="alertGood" style="display:none">✅ Solid setup. A 3:1 R:R means you only need to be right ~25% of the time to break even.</div>
+
+  <div class="disclaimer">Not financial advice. Always manage risk according to your own strategy.</div>
+</div>
+
+<script>
+  let tradeType = 'Long';
+
+  const config = {
+    entry:   { id: 'slEntry',   valId: 'valEntry',   min: 1,    max: 5000,  step: 1,    fmt: v => '$' + v },
+    stop:    { id: 'slStop',    valId: 'valStop',    min: 0.5,  max: 20,    step: 0.5,  fmt: v => v + '%' },
+    tp:      { id: 'slTp',      valId: 'valTp',      min: 0.5,  max: 50,    step: 0.5,  fmt: v => v + '%' },
+    account: { id: 'slAccount', valId: 'valAccount', min: 500,  max: 100000,step: 500,  fmt: v => '$' + Number(v).toLocaleString('en-US') },
+    risk:    { id: 'slRisk',    valId: 'valRisk',    min: 0.25, max: 5,     step: 0.25, fmt: v => v + '%' },
+  };
+
+  function round(val, step) {
+    return Math.round(val / step) * step;
+  }
+
+  function step(key, delta) {
+    const c = config[key];
+    const sl = document.getElementById(c.id);
+    let val = parseFloat(sl.value) + delta;
+    val = round(val, c.step);
+    val = Math.min(Math.max(val, c.min), c.max);
+    sl.value = val;
+    update();
+  }
+
+  function syncFromSlider(key) {
+    update();
+  }
+
+  function setType(t) {
+    tradeType = t;
+    document.getElementById('btnLong').className  = 'toggle-btn' + (t === 'Long'  ? ' active-long'  : '');
+    document.getElementById('btnShort').className = 'toggle-btn' + (t === 'Short' ? ' active-short' : '');
+    update();
+  }
+
+  function fmt(n, d = 2) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function fmtD(n) { return n == null || isNaN(n) ? '—' : '$' + fmt(Math.abs(n)); }
+  function clamp(v, mn, mx) { return Math.min(Math.max(v, mn), mx); }
+
+  function update() {
+    const entry   = +document.getElementById('slEntry').value;
+    const stopPct = +document.getElementById('slStop').value;
+    const tpPct   = +document.getElementById('slTp').value;
+    const account = +document.getElementById('slAccount').value;
+    const riskPct = +document.getElementById('slRisk').value;
+    const isLong  = tradeType === 'Long';
+
+    // Update stepper display values
+    document.getElementById('valEntry').textContent   = '$' + entry;
+    document.getElementById('valStop').textContent    = stopPct + '%';
+    document.getElementById('valTp').textContent      = tpPct + '%';
+    document.getElementById('valAccount').textContent = '$' + Number(account).toLocaleString('en-US');
+    document.getElementById('valRisk').textContent    = riskPct + '%';
+
+    document.getElementById('lblStop').textContent = isLong ? `Stop Loss −${stopPct}%` : `Stop Loss +${stopPct}%`;
+    document.getElementById('lblTp').textContent   = isLong ? `Take Profit +${tpPct}%` : `Take Profit −${tpPct}%`;
+
+    const stop = isLong ? entry * (1 - stopPct / 100) : entry * (1 + stopPct / 100);
+    const tp   = isLong ? entry * (1 + tpPct / 100)  : entry * (1 - tpPct / 100);
+
+    const riskPerShare   = Math.abs(entry - stop);
+    const rewardPerShare = Math.abs(entry - tp);
+    const rr             = rewardPerShare / riskPerShare;
+    const riskAmount     = account * (riskPct / 100);
+    const shares         = riskPerShare > 0 ? riskAmount / riskPerShare : 0;
+    const posSize        = shares * entry;
+    const potLoss        = shares * riskPerShare;
+    const potGain        = shares * rewardPerShare;
+    const winNeeded      = 1 / (1 + rr) * 100;
+
+    const rrColor = rr >= 3 ? '#4ade80' : rr >= 2 ? '#facc15' : '#f87171';
+
+    document.getElementById('outEntry').textContent = fmtD(entry);
+    document.getElementById('outStop').textContent  = fmtD(stop);
+    document.getElementById('outTp').textContent    = fmtD(tp);
+    document.getElementById('outStopLbl').textContent = isLong ? 'Stop ↓' : 'Stop ↑';
+    document.getElementById('outTpLbl').textContent  = isLong ? 'Target ↑' : 'Target ↓';
+    document.getElementById('outRR').textContent    = '1 : ' + fmt(rr);
+    document.getElementById('outRR').style.color    = rrColor;
+    document.getElementById('outWin').textContent   = fmt(winNeeded, 1) + '%';
+    document.getElementById('outWin').style.color   = rrColor;
+    document.getElementById('outShares').textContent = fmt(shares, 2);
+    document.getElementById('outPos').textContent   = fmtD(posSize);
+    document.getElementById('outLoss').textContent  = '−' + fmtD(potLoss);
+    document.getElementById('outGain').textContent  = '+' + fmtD(potGain);
+
+    document.getElementById('gaugeFill').style.width = clamp((rr / 5) * 100, 0, 100) + '%';
+    document.getElementById('alertWarn').style.display = rr < 2  ? 'block' : 'none';
+    document.getElementById('alertGood').style.display = rr >= 3 ? 'block' : 'none';
+  }
+
+  update();
+</script>
+</body>
+</html>
